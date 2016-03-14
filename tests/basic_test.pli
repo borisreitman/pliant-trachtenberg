@@ -20,9 +20,14 @@ function test_times_6
   subtest 1 "test_times_6"
   is (trachtenberg_multiply "123" "6") "738"
 
+function test_times_7
+  subtest 1 "test_times_7"
+  is (trachtenberg_multiply "123" "7") "861"
+
 function all_tests
   tap_start
-  test_times_11
-  test_times_12
+  #test_times_11
+  #test_times_12
   #test_times_6
+  test_times_7
   tap_end

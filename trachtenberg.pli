@@ -56,6 +56,12 @@ function times_6_rule number neighbour carry r
   if (number % 2) = 1
     r += 5
 
+function times_7_rule number neighbour carry r
+  arg Int number neighbour ; arg_rw Int carry ; arg_rw Int r
+  r := 2*number + neighbour\2 + carry
+  if (number % 2) = 1
+    r += 5
+
 function trachtenberg_multiply multiplicand multiplier -> result
   arg Str multiplicand multiplier result
   var Array:Int m := split_number multiplicand "pad "+string:(multiplier:len+1)
@@ -70,6 +76,8 @@ function trachtenberg_multiply multiplicand multiplier -> result
         times_12_rule m:i m:(i+1) carry r:i
       eif f = 6
         times_6_rule m:i m:(i+1) carry r:i
+      eif f = 7
+        times_7_rule m:i m:(i+1) carry r:i
       set_carry carry r:i
   else 
     r size := 1 ; r 0 := 0
