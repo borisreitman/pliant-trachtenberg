@@ -50,30 +50,27 @@ function times_12_rule number neighbour carry r
   arg Int number neighbour ; arg_rw Int carry ; arg_rw Int r
   r := 2*number + neighbour + carry
 
-function times_11 m -> r   # m must have extra zero on the right
-  arg Array:Int m r
-  r size := m:size-1
-  var Int carry := 0
-  for (var Int i) r:size-1 0 step -1
-    times_11_rule m:i m:(i+1) carry r:i
-    set_carry carry r:i
-
-function times_12 m -> r   # m must have extra zero on the right
-  arg Array:Int m r
-  r size := m:size-1
-  var Int carry := 0
-  for (var Int i) r:size-1 0 step -1
-    times_12_rule m:i m:(i+1) carry r:i
-    set_carry carry r:i
+function times_6_rule number neighbour carry r
+  arg Int number neighbour ; arg_rw Int carry ; arg_rw Int r
+  r := number + neighbour\2 + carry
+  if (number % 2) = 1
+    r += 5
 
 function trachtenberg_multiply multiplicand multiplier -> result
   arg Str multiplicand multiplier result
-  var Array:Int multiplicand_ := split_number multiplicand "pad "+string:(multiplier:len+1)
+  var Array:Int m := split_number multiplicand "pad "+string:(multiplier:len+1)
   var Array:Int r
-  if multiplier = "11"
-    r := times_11 multiplicand_
-  eif multiplier = "12"
-    r := times_12 multiplicand_
+  if multiplier:len < 3 and (multiplier eparse (var Int f)) and f > 2 and f <= 12
+    r size := m:size-1
+    var Int carry := 0
+    for (var Int i) r:size-1 0 step -1
+      if f = 11
+        times_11_rule m:i m:(i+1) carry r:i
+      eif f = 12
+        times_12_rule m:i m:(i+1) carry r:i
+      eif f = 6
+        times_6_rule m:i m:(i+1) carry r:i
+      set_carry carry r:i
   else 
     r size := 1 ; r 0 := 0
   result := join_number r
