@@ -1,10 +1,14 @@
-# when storing in array, we always have one extra zero on the right, and many zeros on the left.
+# when storing multiplicand in array, we always have pad one zero on the right, and several zeros on the left.
 
 function split_number n options -> a
   arg Str n ; arg Str options ; arg Array:Int a
-  var Int pad := options option "pad" Int 0
-  a size := pad + n:len + 1
-  a a:size-1 := 0 # extra zero on the right
+  var Int left_pad := options option "left_pad" Int 0
+  var Int right_pad := options option "right_pad" Int 0
+  a size := left_pad + n:len + right_pad
+  var Int i := a:size-1
+  while i > a:size-1-right_pad
+    a i := 0
+    i -= 1
   var Int i := a:size-2
   var Int j := n:len-1
   var Str cur := n
@@ -68,9 +72,20 @@ function times_5_rule number neighbour carry r
   if (number % 2) = 1
     r += 5
 
+function times_9_rule number neighbour carry r position multiplicand_len
+  arg Int number neighbour ; arg_rw Int carry ; arg_rw Int r  ; arg Int position multiplicand_len
+  if position = 0
+    r := (10 - number) + neighbour + carry
+  eif position < multiplicand_len
+    r := (9 - number) + neighbour + carry
+  eif position = multiplicand_len
+    r := neighbour-1 + carry
+  else
+    r := 0
+
 function trachtenberg_multiply multiplicand multiplier -> result
   arg Str multiplicand multiplier result
-  var Array:Int m := split_number multiplicand "pad "+string:(multiplier:len+1)
+  var Array:Int m := split_number multiplicand "left_pad "+string:(multiplier:len+1)+" right_pad 1"
   var Array:Int r
   if multiplier:len < 3 and (multiplier eparse (var Int f)) and f > 2 and f <= 12
     r size := m:size-1
@@ -86,6 +101,8 @@ function trachtenberg_multiply multiplicand multiplier -> result
         times_7_rule m:i m:(i+1) carry r:i
       eif f = 5
         times_5_rule m:i m:(i+1) carry r:i
+      eif f = 9
+        times_9_rule m:i m:(i+1) carry r:i r:size-i-1 multiplicand:len
       set_carry carry r:i
   else 
     r size := 1 ; r 0 := 0
