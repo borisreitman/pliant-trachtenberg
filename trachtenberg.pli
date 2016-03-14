@@ -1,0 +1,41 @@
+function split_number n options -> a
+  arg Str n ; arg Str options ; arg Array:Int a
+  var Int pad := options option "pad" Int 0
+  a size := pad + n:len
+  var Int i := a:size-1
+  var Str cur := n
+  while i >= 0
+    if not (cur:i eparse (var Int digit))
+      digit := 0
+    a i := digit
+    i -= 1
+
+function join_number a options -> n
+  arg Str n ; arg Array:Int a ; arg Str options
+  var Int i := 0
+  if (options option "pad")
+    while a:i = 0 and i < a:size
+      i += 1
+  n := ""
+  while i < a:size
+    n += string a:i
+    i += 1
+
+function join_number a -> n
+  arg Str n ; arg Array:Int a
+  n := join_number a ""
+
+function times_11 m -> r
+  arg Array:Int m r
+  r size := m size
+
+function trachtenberg_multiply multiplicand multiplier -> result
+  arg Str multiplicand multiplier result
+  var Array:Int multiplicand_ := split_number multiplicand "pad "+string:(multiplier:len+1)
+  var Array:Int r
+  if multiplier = "11"
+    r := times_11 multiplicand_
+  result := join_number r
+  
+export trachtenberg_multiply
+

@@ -1,0 +1,5 @@
+submodule "/pliant/install/minimal.pli"
+submodule "/pliant/language/unsafe.pli"
+submodule "/pliant/language/compiler.pli"
+submodule "/pliant/admin/file.pli"
+submodule "unit_test.pli"

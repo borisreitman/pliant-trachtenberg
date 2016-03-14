@@ -1,0 +1,428 @@
+module "/pliant/language/unsafe.pli"
+module "/pliant/language/type/text/str32.pli"
+
+method str mysearch pattern notfound -> pos
+  arg Str str ; arg Str pattern ; arg Int notfound pos
+  pos := shunt pattern="" notfound (str search pattern notfound)
+method str contains str2 -> ok
+  arg Str str str2 ; arg Bool ok
+  ok := (str mysearch str2 -1) <> -1
+method str begins str2 -> ok
+  arg Str str str2 ; arg Bool ok
+  ok := (str mysearch str2 -1) = 0
+
+method big ends small -> ok
+  arg Str big small ; arg Bool ok
+  ok := shunt big="" false (big search_last small -1) = big:len - small:len 
+
+function ucfirst str -> retval
+  arg Str str retval
+  retval := upper:(str 0 1) + (str 1 str:len-1)
+
+function translate2 str list1 list2 -> str2
+  #e.g.  translate "ab bc ca" "abc" "123" ==> "12 23 31"
+  # both lists must be the same length, otherwise it goes by the shorter list
+  arg Str list1 list2 str str2
+  str2 := str
+  var Int length := shunt list1:len < list2:len list1:len list2:len
+  var (Dictionary Str Str) mapping
+  for (var Int index) 0 length-1
+    var Str s1 := list1:index
+    var Str s2 := list2:index
+    mapping insert s1 s2
+  for (var Int index) 0 str:len-1
+    var Str s := str2:index
+    if (mapping exists s)
+      str2:index := mapping:s:0
+
+function translate str list1 list2 -> str2
+  # long  form: translate "ab bc ca" "abc" "123" ==> "12 23 31"
+  # short form: translate "aa bb cc" "abc" "5"   ==> "55 55 55"
+  arg Str str str2 ; arg Str list1 list2
+  var Str list
+  if list2:len=1 # short case 
+    var Str char := list2
+    list := ""
+    for (var Int index) 0 list1:len-1
+      list += char
+  else
+    list := list2
+  str2 := translate2 str list1 list
+
+function alphabet_to_dict alphabet -> dict
+  arg Str alphabet ; arg (Dictionary Str Int) dict
+  reset dict
+  for (var Int i) 0 alphabet:len-1
+    dict alphabet:i := 1
+
+function filter_by_alphabet str alphabet -> answer
+  arg Str str answer
+  arg (Dictionary Str Int) alphabet
+  answer := str
+  var Int i := 0
+  while i < answer:len
+    var Str char := answer:i
+    if not (alphabet exists lower:char)
+      answer := replace answer char ""
+      i -= 1
+    i += 1
+
+gvar (Dictionary Str (Dictionary Str Int)) alphabet_dict
+
+function filter_by_alphabet str alphabet -> answer
+  arg Str str alphabet answer
+  if not (alphabet_dict exists alphabet)
+    alphabet_dict alphabet := alphabet_to_dict alphabet
+  answer := filter_by_alphabet str alphabet_dict:alphabet
+
+constant letters_and_digits_alphabet "abcdefghijklmnopqrstuvwxyz0123456789"
+
+function only_letters_and_digits str extra -> str2
+  arg Str str str2 extra
+  str2 := filter_by_alphabet str letters_and_digits_alphabet+extra
+
+function only_letters_and_digits str -> str2
+  arg Str str str2
+  str2 := only_letters_and_digits str ""
+  
+function only_digits str extra -> str2
+  arg Str str str2 extra
+  constant alphabet_digits "0123456789"
+  str2 := filter_by_alphabet str alphabet_digits+extra
+
+function only_digits str -> str2
+  arg Str str str2
+  str2 := only_digits str ""
+
+function is_only_digits str -> yes
+  arg Str str ; arg Bool yes
+  yes := (only_digits str "") = str
+
+function only_letters str extra -> str2
+  arg Str str str2 extra
+  constant alphabet_letters "abcdefghijklmnopqrstuvwxyz"
+  str2 := filter_by_alphabet str alphabet_letters+extra
+
+function only_letters str -> str2
+  arg Str str str2
+  str2 := only_letters str ""
+
+function is_space_character chr -> ok 
+  arg Bool ok ; arg Char chr
+  ok := chr = " " or chr = "[lf]" or chr = "[cr]" or chr = "[tab]"
+
+function collapse_char str white_space max_spaces -> answer
+  arg Str str answer ; arg Str white_space ; arg Int max_spaces
+  # similar to implementation of replace in language/optimizer/gcc.pli
+  answer := str
+  var Int count := 0
+  var Int i := 0
+  while i < answer:len
+    if answer:i <> white_space
+      count := 0
+    else
+      count += 1
+      if count = max_spaces
+        var Int j := i
+        while i < answer:len and answer:i = white_space
+          i += 1
+        answer := (answer 0 j+1)+(answer i answer:len)
+        i := j
+        count := 0
+    i += 1
+
+
+function collapse_char str white_space -> retval
+  arg Str str retval ; arg Str white_space
+  retval := collapse_char str white_space 1
+
+function collapse_spaces str -> retval
+  arg Str str retval
+  retval := collapse_char str " "
+
+function collapse_linefeeds str n -> retval
+  arg Str str retval ; arg Int n
+  retval := collapse_char str "[lf]" n
+
+function collapse_linefeeds str -> retval
+  arg Str str retval
+  retval := collapse_linefeeds str 1
+
+function collapse_all_whitespaces str -> retval
+  arg Str str retval
+  retval := collapse_char str " "
+  retval := collapse_char retval "[cr]"
+  retval := collapse_char retval "[lf]"
+
+function trim str char -> retval
+  arg Str str char retval 
+  if str = ""
+    retval := ""
+    return
+  var Int i := 0
+  part leading
+    while i < str:len
+      if str:i<>char
+        leave leading
+      i += 1
+  retval := str i str:len
+  var Int i := retval:len-1
+  part trailing
+    while i >= 0
+      if retval:i<>char
+        leave trailing
+      i -= 1
+  retval := retval 0 i+1
+
+function trim str -> retval
+  arg Str str retval 
+  retval := trim str " "
+
+function trim_whitespaces str -> retval
+  arg Str str retval
+  if str = ""
+    retval := ""
+    return
+  var Int i := 0
+  part leading
+    while i < str:len
+      if not is_space_character:(str:i)
+        leave leading
+      i += 1
+  retval := str i str:len
+  var Int i := retval:len-1
+  part trailing
+    while i >= 0
+      if not is_space_character:(retval:i)
+        leave trailing
+      i -= 1
+  retval := retval 0 i+1
+
+function cleanup_space str -> retval
+  arg Str str retval
+  retval := collapse_spaces trim:str
+
+function chomp_trailing_space str -> str2
+  arg Str str str2
+  if str = ""
+    str2 := str
+    return 
+  var Int index := str:len-1
+  part find_first_char
+    while index >= 0
+      var Char chr := str index
+      if is_space_character:chr or chr = "[lf]" or chr = "[cr]"
+        index -= 1
+      else
+        leave find_first_char
+  str2 := str 0 index+1
+
+function strip_leading_space str -> retval
+  arg Str str retval
+  var Int start := 0
+  retval := ""
+  part find_leading
+    while start < str:len
+      if str:start <> " "
+        leave find_leading
+      start += 1
+  retval := str start str:len-start
+
+#### add leading zero to integers and output in string format ####
+function pad num digits -> num_str
+  arg Int num digits
+  arg Str num_str
+  num_str := ""
+  for (var Int i) string:num:len digits-1
+    num_str += "0"
+  num_str += string:num
+
+module "/pliant/language/stream.pli"
+module "/pliant/language/type/misc/blob.pli"
+module "/pliant/language/stream/blob.pli"
+
+method stream open_string str
+  arg_rw Stream stream ; arg Str str
+  (var Blob b) map str:characters str:len
+  stream open b in+safe
+
+function js_encode_string str -> str2 # a\b"c becomes a\\b\"c
+  arg Str str str2
+  str2 := replace str character:1 ""
+  str2 := replace str2 "\" character:1
+  str2 := replace str2 "[dq]" "\[dq]"
+  str2 := replace str2 character:1 "\\"
+
+function js_string str -> str2 # a\b"c becomes "a\\b\"c"
+  arg Str str str2
+  str2 := "[dq]"+js_encode_string:str+"[dq]"
+
+function js_string number -> str
+  arg Int number ; arg Str str
+  if number=undefined
+    str := "undefined"
+  else
+    str := string:number
+
+function js_string number -> str
+  arg Float number ; arg Str str
+  if number=undefined
+    str := "undefined"
+  else
+    str := string:number
+
+function js_string bool -> str
+  arg Bool bool ; arg Str str
+  if bool
+    str := "true"
+  else
+    str := "false"
+
+function language_encode_template_string str -> str2 # hello[fr:]bonjour => en "hello" fr "bonjour"
+  arg Str str str2
+  # this is for strings appearing in template files
+  # note: extend for each supported new language
+  str2 := replace str "[dq]" character:1
+  str2 := replace str2 "[lb]fr:[rb]" "[dq] fr [dq]"
+  str2 := replace str2 character:1 "[lb]dq[rb]"
+  str2 := "en [dq]"+str2+"[dq]"
+
+module "/pliant/language/stream/filesystembase.pli"
+module "/pliant/language/stream/openmode.pli"
+module "/pliant/language/stream.pli"
+module "/pliant/language/stream/multi.pli"
+
+function unzip_string encoded -> str
+  arg Str encoded str
+  str := ""
+  if encoded=""
+    return
+  (var Blob b) map encoded:characters encoded:len
+  var Link:Stream zipped_stream :> new Stream
+  if (zipped_stream open b in+safe)=success
+    if ((var Stream stream) open "gzip:" "" in+safe pliant_default_file_system zipped_stream)=success
+      while not stream:atend
+        stream read_available (var Address adr) (var Int size_received)
+        (var Str txt) set adr size_received false
+        str += txt
+      stream:close
+    zipped_stream close
+
+function zip_string str -> encoded
+  arg Str encoded str
+  encoded := ""
+  if str=""
+    return
+  var Link:Stream stream :> new Stream
+  if (stream open (var Blob blob) out+safe)=success
+    if ((var Stream zipped_stream) open "gzip:" "" out+safe pliant_default_file_system stream)=success
+      zipped_stream writechars str
+      zipped_stream close
+    stream close
+  if (stream open (var Blob blob) in+safe)=success
+    while not stream:atend
+      stream read_available (var Address adr) (var Int size_received)
+      (var Str tmp) set adr size_received false
+      encoded += tmp
+
+method str letter_count -> count # characters in other languages take lots of bytes
+  arg Str str ; arg Int count
+  var Str32 tmp := str
+  count := tmp len
+
+function cut_text_to_length str max_length -> str2
+  arg Str str str2 ; arg Int max_length
+  var Str32 tmp := str
+  str2 := tmp 0 max_length
+
+function shorten_name name max_length -> short
+  arg Str name short ; arg Int max_length
+  # note: John Smith should be shorted to John ... not, John Sm...
+  var Str32 name32 := name
+  var Int letters := name32:len
+  if letters < max_length
+    short := name
+    return
+  var Int space_index := -1
+  part find_space
+    for (var Int index) letters-1 0 step -1
+      if name32:index=" "
+        space_index := index
+        leave find_space
+  constant min_characters_to_preserve_in_name 5
+  if space_index < min_characters_to_preserve_in_name or space_index >= max_length-3
+    short := (cut_text_to_length name max_length-3)+"..."
+  else
+    short := (cut_text_to_length name space_index+1)+"..."
+
+function fix_user_input str -> result
+  arg_r Str str ; arg Str result
+  result := cleanup_space str
+
+function yaml_string str -> str2
+  arg Str str str2
+  str2 := replace str "[lf]" "\n"
+
+function unhexa s -> i
+ arg Str s ; arg Int i
+ i := 0
+ for (var Int j) 0 s:len-1
+   var Int c := s:j number
+   if c>="0":0:number and c<="9":0:number
+     i := i*16+(c-"0":0:number)
+   eif c>="A":0:number and c<="F":0:number
+     i := i*16+(c-"A":0:number+10)
+   eif c>="a":0:number and c<="f":0:number
+     i := i*16+(c-"a":0:number+10)
+   else
+     return undefined
+
+function hex_to_decimal hex -> result
+  arg Str hex ; arg Int result
+  result := unhexa hex
+
+method str search_unescaped_quote offset not_found_pos -> pos
+  arg Str str ; arg Int offset not_found_pos pos
+  pos := not_found_pos
+  if offset >= str:len
+    return
+  var Int i := offset
+  var Int count := 0
+  var Int len := str:len
+  while i < len 
+    if str:i="\"
+      count := (count + 1) % 2
+    eif str:i = "[dq]" and count = 0
+      pos := i
+      return
+    else
+      count := 0
+    i += 1
+
+public
+
+export '. search_unescaped_quote'
+export fix_user_input
+export strip_leading_space trim
+export chomp_trailing_space
+export '. mysearch'
+export '. contains'
+export '. begins'
+export '. ends'
+export '. open_string'
+export ucfirst
+export only_letters_and_digits only_digits only_letters is_only_digits
+export filter_by_alphabet 
+export cleanup_space collapse_spaces
+export collapse_char collapse_linefeeds
+export collapse_all_whitespaces trim_whitespaces
+export is_space_character
+export translate
+export pad
+export js_encode_string js_string
+export zip_string unzip_string
+export language_encode_template_string
+export '. letter_count'
+export cut_text_to_length shorten_name
+export yaml_string
+export hex_to_decimal

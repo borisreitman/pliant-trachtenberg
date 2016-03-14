@@ -1,0 +1,136 @@
+module "string.pli"
+
+# TAP implementation https://testanything.org/tap-version-13-specification.html
+
+gvar Int plan_counter := 0
+gvar Bool tap_started  := false
+
+init 
+  tap_started := false
+
+public
+
+gvar Int ok_counter   := 1
+
+function tap_start
+  plan_counter := 0
+  ok_counter   := 1
+  tap_started  := true
+  console "#" eol
+  console "TAP version 13" eol
+
+function subtest plan label
+  arg Int plan ; arg Str label
+  plan_counter += plan+1
+  if not tap_started
+    tap_start
+  console "# sub test " plan " " label eol
+  console "ok " ok_counter " sub test start " label eol
+  ok_counter += 1
+
+function subtest plan
+  arg Int plan
+  subtest plan ""
+  
+function tap_end
+  console "1.."+string:plan_counter eol
+
+function ok bool label
+  arg CBool bool ; arg Str label
+  console (shunt bool "ok" "not ok") " " ok_counter " "+label eol
+  ok_counter += 1
+
+function ok bool
+  arg CBool bool
+  ok bool ""
+
+function is observed expected label
+  arg Float observed expected ; arg Str label
+  if abs:(observed - expected) >= 0.01
+    console "not ok " ok_counter " " label eol 
+    # YAML document showing the error
+    console "  ---" eol
+    console "  error: " yaml_string:"values are not equal" eol 
+    console "  expected: " string:expected eol 
+    console "  observed: " string:observed eol 
+    console "  ..." eol
+  else
+    console "ok " ok_counter eol
+  ok_counter += 1
+
+function is observed expected
+  arg Float observed expected
+  is observed expected ""
+
+function is observed expected label
+  arg Str observed expected ; arg Str label
+  if observed <> expected 
+    console "not ok " ok_counter " " label eol 
+    # YAML document showing the error
+    console "  ---" eol
+    console "  error: " yaml_string:"strings are not equal" eol 
+    console "  expected: " yaml_string:expected eol 
+    console "  observed: " yaml_string:observed eol 
+    var Int stop := min expected:len observed:len
+    var Int i := 0
+    while i < stop and expected:i = observed:i
+      i += 1
+    if i < stop
+      console "  diverges: " yaml_string:(observed i observed:len) eol 
+    eif expected:len > observed:len
+      console "  missing: "  yaml_string:(expected observed:len expected:len) eol
+    eif expected:len < observed:len
+      console "  extra: "    yaml_string:(observed expected:len observed:len) eol
+    console "  ..." eol
+  else
+    console "ok " ok_counter eol
+  ok_counter += 1
+
+function is observed expected
+  arg Str observed expected
+  is observed expected ""
+
+function ok_contains big small label
+  arg Str big small label
+  if (big contains small)
+    console "ok " ok_counter " " label eol
+  else
+    console "not ok " ok_counter " " label eol
+    # YAML document showing the error
+    console "  ---" eol
+    console "  error: " yaml_string:"substring should appear in the string, but it did not" eol 
+    console "  substring: " yaml_string:small eol 
+    console "  string: "    yaml_string:big   eol 
+    console "  ..." eol
+  ok_counter += 1
+
+function ok_contains big small
+  arg Str big small
+  ok_contains big small ""
+
+function assert_inclusion observed expected
+  arg Str observed expected
+  ok_contains observed expected
+
+function is_missing big small label
+  arg Str big small label
+  if not (big contains small)
+    console "ok " ok_counter " " label eol
+  else
+    console "not ok " ok_counter " " label eol
+    # YAML document showing the error
+    console "  ---" eol
+    console "  error: " yaml_string:"substring should not appear, but it did" eol 
+    console "  string: "    yaml_string:big   eol 
+    console "  substring: " yaml_string:small eol 
+    console "  ..." eol
+  ok_counter += 1
+
+function is_missing big small
+  arg Str big small
+  is_missing big small ""
+
+function plan_tests num_tests
+  arg Int num_tests
+  console "1.." num_tests eol
+
