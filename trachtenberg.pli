@@ -1,33 +1,48 @@
+# when storing in array, we always have one extra zero on the right, and many zeros on the left.
+
 function split_number n options -> a
   arg Str n ; arg Str options ; arg Array:Int a
   var Int pad := options option "pad" Int 0
-  a size := pad + n:len
-  var Int i := a:size-1
+  a size := pad + n:len + 1
+  a a:size-1 := 0 # extra zero on the right
+  var Int i := a:size-2
+  var Int j := n:len-1
   var Str cur := n
-  while i >= 0
-    if not (cur:i eparse (var Int digit))
+  while j >= 0
+    if not (cur:j eparse (var Int digit))
       digit := 0
     a i := digit
+    i -= 1
+    j -= 1
+  while i >= 0 # leading zeros
+    a i := 0
     i -= 1
 
 function join_number a options -> n
   arg Str n ; arg Array:Int a ; arg Str options
   var Int i := 0
-  if (options option "pad")
+  if (options option "trim_left")
     while a:i = 0 and i < a:size
       i += 1
   n := ""
-  while i < a:size
+  var Int stop := a:size - (options option "trim_right" Int 0)
+  while i < stop
     n += string a:i
     i += 1
 
 function join_number a -> n
   arg Str n ; arg Array:Int a
-  n := join_number a ""
+  n := join_number a "trim_left"
 
-function times_11 m -> r
+function times_11 m -> r   # m must have extra zero on the right
   arg Array:Int m r
-  r size := m size
+  r size := m:size-1
+  var Int carry := 0
+  for (var Int i) r:size-1 0 step -1
+    #console "got " m:i "+" m:(i+1) eol
+    r i := m:i + m:(i+1) + carry
+    if r:i > 10
+      carry := r:i \ 10
 
 function trachtenberg_multiply multiplicand multiplier -> result
   arg Str multiplicand multiplier result
