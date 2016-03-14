@@ -34,14 +34,27 @@ function join_number a -> n
   arg Str n ; arg Array:Int a
   n := join_number a "trim_left"
 
+function set_carry carry r
+  arg_rw Int r ; arg_rw Int carry
+  if r > 9
+    carry := r \ 10
+    r := r % 10
+  else
+    carry := 0
+
+function times_11_rule number neighbour carry r
+  arg Int number neighbour
+  arg_rw Int carry ; arg_rw Int r
+  r := number + neighbour + carry
+
 function times_11 m -> r   # m must have extra zero on the right
   arg Array:Int m r
   r size := m:size-1
   var Int carry := 0
   for (var Int i) r:size-1 0 step -1
-    r i := m:i + m:(i+1) + carry
-    if r:i > 10
-      carry := r:i \ 10
+    #console "got " m:i " " m:(i+1) " carry: " carry eol
+    times_11_rule m:i m:(i+1) carry r:i
+    set_carry carry r:i
 
 function times_12 m -> r   # m must have extra zero on the right
   arg Array:Int m r
