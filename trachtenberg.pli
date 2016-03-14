@@ -83,6 +83,18 @@ function times_9_rule number neighbour carry r position multiplicand_len
   else
     r := 0
 
+function times_8_rule number neighbour carry r position multiplicand_len
+  arg Int number neighbour ; arg_rw Int carry ; arg_rw Int r  ; arg Int position multiplicand_len
+  if position = 0
+    r := 2*(10 - number) + neighbour + carry
+  eif position < multiplicand_len
+    r := 2*(9 - number) + neighbour + carry
+  eif position = multiplicand_len
+    r := neighbour-2 + carry
+  else
+    r := 0
+
+
 function trachtenberg_multiply multiplicand multiplier -> result
   arg Str multiplicand multiplier result
   var Array:Int m := split_number multiplicand "left_pad "+string:(multiplier:len+1)+" right_pad 1"
@@ -103,6 +115,8 @@ function trachtenberg_multiply multiplicand multiplier -> result
         times_5_rule m:i m:(i+1) carry r:i
       eif f = 9
         times_9_rule m:i m:(i+1) carry r:i r:size-i-1 multiplicand:len
+      eif f = 8
+        times_8_rule m:i m:(i+1) carry r:i r:size-i-1 multiplicand:len
       set_carry carry r:i
   else 
     r size := 1 ; r 0 := 0
