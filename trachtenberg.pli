@@ -39,8 +39,16 @@ function times_11 m -> r   # m must have extra zero on the right
   r size := m:size-1
   var Int carry := 0
   for (var Int i) r:size-1 0 step -1
-    #console "got " m:i "+" m:(i+1) eol
     r i := m:i + m:(i+1) + carry
+    if r:i > 10
+      carry := r:i \ 10
+
+function times_12 m -> r   # m must have extra zero on the right
+  arg Array:Int m r
+  r size := m:size-1
+  var Int carry := 0
+  for (var Int i) r:size-1 0 step -1
+    r i := 2 * m:i + m:(i+1) + carry
     if r:i > 10
       carry := r:i \ 10
 
@@ -50,6 +58,10 @@ function trachtenberg_multiply multiplicand multiplier -> result
   var Array:Int r
   if multiplier = "11"
     r := times_11 multiplicand_
+  eif multiplier = "12"
+    r := times_12 multiplicand_
+  else 
+    r size := 1 ; r 0 := 0
   result := join_number r
   
 export trachtenberg_multiply
